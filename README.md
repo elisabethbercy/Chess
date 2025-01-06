@@ -19,25 +19,17 @@ You can open the Chess Game with the following expression:
 	space resizable: true.
 	space show.
 ```
+---
 
 # Our Katas
-We chose the following Katas:
-
-## Kata 1
-Fix pawn moves!
-Goal: Practice debugging and testing
-Pawns are one of the most complicated pieces of chess to implement. They move forward, one square at a time, except for their first movement. However, they can move diagonally to capture other pieces. And in addition, there is the (in)famous "En passant" move that complicates everything (see https://en.wikipedia.org/wiki/En_passant, and the FEN documentation for ideas on how to encode this information https://www.chessprogramming.org/Forsyth-Edwards_Notation#En_passant_target_square). As any complicated feature, the original developer (Guille P) left this for the end, and then left the project. But you can do it.
-Questions and ideas that can help you in the process:
-- Can you write tests showing the bugs?
-- What kind of tools can you use to spot the bug?
-- Can you approach this incrementally? This is, splitting this task in many subtasks. How would you prioritize them?
+We chose the following Katas: Fix pawn moves! Restrcit legal moves! Refactoring of pieces rendering
 
 # Kata 1: Correction of Pawn Movement
 
-## Objective  
+# Objective  
 Practice debugging and testing.
 
----
+
 
 ## Implementation Summary  
 This kata focused on implementing the rules for pawn movements, including:  
@@ -47,7 +39,7 @@ This kata focused on implementing the rules for pawn movements, including:
 
 An incremental approach and the **State Design Pattern** were used to structure the movement logic.
 
----
+
 
 ## Key Steps  
 
@@ -63,13 +55,13 @@ An incremental approach and the **State Design Pattern** were used to structure 
 
 Each state calculates possible moves, simplifying the logic within the `Pawn` class.
 
----
+
 
 ## Tests and Coverage  
 - Unit tests for each movement rule.  
 - Manual checks using a simplified graphical interface.
 
----
+
 
 ## Design Decisions  
 
@@ -86,23 +78,9 @@ Thorough testing ensured the reliability of all implemented features.
 ---
 
 
-## Kata 2
-Restrict legal moves
-Goal: Practice code understanding, refactorings and debugging
-In chess, when we are not in danger we can move any piece we want in general, as soon as we follow the rules. However, when the king gets threatened, we must protect it! The only legal moves in that scenario are the ones that save the king (or otherwise we lose). What are moves that protect the king? The ones that capture the attacker, block the attack, or move the king out of danger. Another way to see it is: A move protects the king if it moves it out of check.
-The current implementation does not support this restriction. As any complicated feature, the original developer (Guille P) left this for the end, and then left the project. But you can do it.
-Questions and ideas that can help you in the process:
-- What tools help you finding the right place to put this new code?
-- How do you avoid repeating all the existing code computing legal moves and checks?
-
-## Difficulties encountered with Restrict Legal Moves
-- Simulating Moves Safely: Testing potential moves without permanently altering the game state requires a reliable mechanism to temporarily modify and then restore the board state. This is crucial to check if a move leaves the king in danger.
-- King Safety Validation: Determining whether a move leaves the king in check involves accurately tracking the king’s position and verifying if it remains under attack after the move. This requires precise evaluation of threats from all opponent pieces.
-- Handling Special Rules: Rules like castling, en passant, and pawn promotion introduce additional complexities. For example, castling is only valid if the king is not in, passing through, or moving into check, which demands extra checks.
-- Opponent Threat Calculation: Identifying squares attacked by opponent pieces is fundamental. This involves simulating their potential moves and ensuring that their attacks are correctly calculated for every board configuration.
 
 
-# Kata 3
+# Kata 2
 Refactor piece rendering
 Goal: Practice refactorings, double dispatch and table dispatch
 The game renders pieces with methods that look like these:
@@ -132,7 +110,7 @@ Questions and ideas that can help you in the process:
 
 The goal of this kata is to simplify the piece rendering logic by removing unnecessary conditionals. The previous implementation relied heavily on complex checks, making the code harder to read and maintain. We applied **double dispatch**, **inheritance**, and **polymorphism** to achieve cleaner, more maintainable code while preserving functionality.
 
----
+
 
 ## Key Steps in the Refactoring Process
 
@@ -144,7 +122,7 @@ The goal of this kata is to simplify the piece rendering logic by removing unnec
 
 3. **Creating Specific Methods**:  
    Each piece class (e.g., `BlackBishop`, `WhiteBishop`) now has methods to render on black and white squares:
-   ```smalltalk
+   ```pharo
    BlackBishop >> renderPieceOnBlackSquare [ ^ 'v' ]
    BlackBishop >> renderPieceOnWhiteSquare [ ^ 'V' ]
    ```
@@ -161,7 +139,7 @@ The goal of this kata is to simplify the piece rendering logic by removing unnec
 7. **Ensuring Easy Extensibility**:  
    This structure allows the other pieces to be added easily by implementing their own rendering methods without touching other parts of the code.
 
----
+
 
 ## Rendered Symbols
 
@@ -174,7 +152,7 @@ Here’s how each bishop is displayed based on the square color:
 | White Bishop    | Black        | b               |  
 | White Bishop    | White        | B               |  
 
----
+
 
 ## Why This is Better
 
@@ -194,12 +172,204 @@ This refactor improves the code by :
 
 
 
-
-
 ---
+
+
+
+# Kata 3 Restrict Legal Move
+
+
+## Introduction
+
+This kata aims the main focuses is protecting the King while being in check/danger.
+The initial implementation of the King protection logic that we started with contained a very large method that was responsible 
+for handling all aspects that we could though  of checking the King’s safety. 
+
+This led to warnings in Pharo due to the method’s size and complexity.
+As a result, we refactored the code into smaller, more focused methods to comply with Pharo’s philosophy of simplicity and readability.
+
+## The method (codesmell) that we came up with 
+
+
+```pharo
+MyPiece >> legalTargetSquares [
+
+"king is in check , only authorize my pieces to move on fatal squares"
+
+|inCheck pieces king initialTargets killAttackSquares defendingSquares allowedSquares projectedSquares nextDecisiveSquares allSquares|
+
+ initialTargets := self targetSquaresLegal: true.
+
+  
+ pieces := self square board pieces select: [:s | s isNotNil ].
+
+"first condition"
+ king := (self isWhite ifFalse: [ pieces select:[:p | p isKing and: p color = Color black ]] 
+							 ifTrue: [ pieces select:[:p | p isKing and: p color = Color white ] ]) at:1 .
+
+ 
+inCheck  := king isInCheck.
+
+Transcript show: (king attackingSquares) .
+
+"Second condition"
+killAttackSquares := self opponentPieces select: [ :opponent | 
+    opponent attackingSquares includes: king square
+] thenCollect: [ :opponent | opponent square ].
+
+"Transcript show: killAttackSquares ."
+
+allowedSquares := initialTargets select: [ :s | (king fatalSquares includes: s) or: [killAttackSquares includes: s]. ].
+
+"Transcript show: allowedSquares ."
+
+
+ "third condition"
+nextDecisiveSquares := OrderedCollection new.
+
+self opponentPieces do: [ :opponent | 
+    | hypoSquares tempDecisiveSquares |
+    
+    "Opponent attackingSquares"
+    hypoSquares := opponent attackingSquares.
+
+    tempDecisiveSquares := hypoSquares select: [ :hsquare | 
+        | projectedOpponentSquares |
+        
+        "Simuler le mouvement de l'adversaire"
+        opponent nextSquare: hsquare.
+        projectedOpponentSquares := opponent attackingSquares.
+        opponent nextSquare: nil.
+
+        "Vérifier si cela correspond à une position critique pour le roi"
+        projectedOpponentSquares anySatisfy: [ :ps | 
+				(ps isNil not) and:[ (ps samePositionAs: king square) 
+             or: [ king attackingSquares anySatisfy: [ :ks | ks isNil not and: [ ks samePositionAs: ps ]  ] ] ].
+        ].
+    ].
+
+    "Ajouter les carrés décisifs trouvés"
+    nextDecisiveSquares addAll: tempDecisiveSquares.
+].
+
+nextDecisiveSquares := nextDecisiveSquares asSet asOrderedCollection.  
+
+defendingSquares := initialTargets select: [ :initial | 
+    "Simulate moving the piece to the square 'initial'"
+    self nextSquare: initial.
+
+    "Get the projected squares after the move"
+    projectedSquares := self attackingSquares.
+
+    "Reset the piece's position"
+    self nextSquare: nil.
+
+    "Check if the projected squares have a common element with 'nextDecisiveSquares'"
+    (nextDecisiveSquares intersection: projectedSquares) isEmpty not.
+].
+
+
+ allSquares := (allowedSquares , defendingSquares ) asOrderedCollection . 
+
+"^initialTargets "
+ ^ inCheck ifTrue: [ allSquares ]
+	ifFalse: [ initialTargets ] 
+
+
+]
+
+
+```
+
+## Refactoring Overview
+
+The original method for checking the King’s safety included multiple responsibilities, such as:
+
+- Detecting whether the King is in check.
+- Calculating the allowed target squares for a piece’s movement.
+- Simulating opponent moves and determining if they pose a threat.
+- Identifying defending squares for the King.
+
+Due to the complexity, the method was hard to maintain and violated the single-responsibility principle. To address this, we broke the logic down into smaller methods that each handle a specific part of the calculation.
+
+## Key Refactored Methods
+
+### 1. **Attacking Squares Calculation**
+
+The `attackingSquares` method returns all the squares a piece can attack. This is critical for protecting the King, as we need to determine which squares might be under threat.
+
+```pharo
+MyPiece >> attackingSquares [
+    ^ self legalTargetSquares
+]
+```
+
+### 2. **Legal Target Squares**
+
+The `legalTargetSquares` method calculates all squares where a piece can legally move. This helps identify safe squares for the King, ensuring it doesn’t move to a square under attack.
+
+```pharo
+MyPiece >> legalTargetSquares [
+    ^ self targetSquaresLegal: true
+]
+```
+
+### 3. **Simulating Moves and Collecting Squares**
+
+We use the `collectSquares` method to gather squares based on conditions such as legality and movement direction. This method helps in simulating moves for the King’s protection.
+
+```pharo
+MyPiece >> collectSquares: aBlock legal: shouldBeLegal [
+    ^ self collectSquares: aBlock while: [ :aSquare | 
+        aSquare notNil and: [ shouldBeLegal ==> aSquare hasPiece not ] ]
+]
+```
+
+### 4. **Path Commands for Collecting Specific Squares**
+
+The `collectSquares: while: untilBlock` method is responsible for collecting squares based on specific conditions until a blocking condition is met, such as encountering an opponent’s piece.
+
+```pharo
+MyPiece >> collectSquares: collectBlock while: untilBlock [
+    | targets next |
+    targets := OrderedCollection new.
+
+    "Collect up right"
+    next := square.
+    [ untilBlock value: (next := collectBlock value: next) ]
+    whileTrue: [ targets add: next ].
+
+    "If we can hit the next piece, then add it too"
+    (next notNil and: [ next contents color ~= color ]) ifTrue: [ targets add: next ].
+
+    ^ targets
+]
+```
+
+### 5. **Moving to a Square**
+
+The `moveTo: aSquare` method simulates moving a piece to a target square, ensuring it’s a legal move before updating the piece’s position.
+
+```pharo
+MyPiece >> moveTo: aSquare [
+    (self legalTargetSquares includes: aSquare) ifFalse: [ ^ self ].
+    square emptyContents.
+    square := aSquare.
+    aSquare contents: self
+]
+```
+
+## Why Refactor?
+
+Pharo promotes writing simple, clean, and maintainable code. By refactoring the large method into smaller methods, we achieved the following benefits:
+
+- **Single Responsibility:** Each method now has a focused task, improving readability and maintenance.
+- **Modularity:** Methods like `collectSquares`, `attackingSquares`, and `moveTo:` can be reused across different parts of the game logic.
+- **Readability:** Smaller methods are easier to understand and follow, making the codebase more approachable.
+
+
 
 ## Conclusion  
 - ** Kata 1 successfully structured pawn movement rules using an incremental approach and the State design pattern. Comprehensive testing helped detect and fix bugs efficiently.
-- ** Kata 2 successfully restricted legal movement rules to protect the king
-- ** kata 3 This refactoring exercise demonstrates how applying object-oriented principles, like double dispatch and polymorphism, can significantly improve the structure and maintainability of code.
-By shifting the rendering logic from MyChessSquare to the individual piece classes, we’ve made the code cleaner, easier to understand, and more flexible for future changes.
+- ** Kata 2 successfully restricted legal (allied pieces and King's movement)  rules to protect the king. We refactored the big method we had in smaller more manageable methods.
+- ** kata 3 successfully refactored the piece rendering code into a cleaner and maintainable code.

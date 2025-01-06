@@ -3,7 +3,7 @@ You can get the code in Pharo 12 by installing the following baseline code:
 
 ```
 Metacello new
-	repository: 'github://UnivLille-Meta/Chess:main';
+	repository: 'github://elisabethbercy/Chess:main';
 	baseline: 'MygChess';
 	onConflictUseLoaded;
 	load.

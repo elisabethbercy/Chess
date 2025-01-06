@@ -50,7 +50,7 @@ Questions and ideas that can help you in the process:
 - What tools help you finding the right place to put this new code?
 - How do you avoid repeating all the existing code computing legal moves and checks?
 
-##Difficulties encountered with Restrict Legal Moves
+## Difficulties encountered with Restrict Legal Moves
 - Simulating Moves Safely: Testing potential moves without permanently altering the game state requires a reliable mechanism to temporarily modify and then restore the board state. This is crucial to check if a move leaves the king in danger.
 - King Safety Validation: Determining whether a move leaves the king in check involves accurately tracking the king’s position and verifying if it remains under attack after the move. This requires precise evaluation of threats from all opponent pieces.
 - Handling Special Rules: Rules like castling, en passant, and pawn promotion introduce additional complexities. For example, castling is only valid if the king is not in, passing through, or moving into check, which demands extra checks.

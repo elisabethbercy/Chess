@@ -159,7 +159,7 @@ The goal of this kata is to simplify the piece rendering logic by removing unnec
    We removed complex conditionals, simplifying the code and improving readability.
 
 7. **Ensuring Easy Extensibility**:  
-   This structure allows new pieces to be added easily by implementing their own rendering methods without touching other parts of the code.
+   This structure allows the other pieces to be added easily by implementing their own rendering methods without touching other parts of the code.
 
 ---
 
@@ -191,11 +191,6 @@ This refactor improves the code by :
 - ** Simplifying the piece rendering logic.
 - ** Semoving complex conditionals, and making the codebase more maintainable and extensible.
 - ** By leveraging double dispatch, inheritance, and polymorphism, the solution is flexible and scalable, allowing for easy adaptation to future changes.
-
----
-
-
-
 
 
 

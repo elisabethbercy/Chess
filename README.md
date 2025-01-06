@@ -33,6 +33,13 @@ Questions and ideas that can help you in the process:
 •	Can you approach this incrementally? This is, splitting this task in many subtasks. How would you prioritize them?
 
 ## Difficulties encountered with fix Pawn Moves
+•	Complex Movement Rules: Pawns have unique rules (one-square forward, two-square initial move, diagonal capture, "En passant") requiring distinct logic and checks.
+•	State Management: "En passant" relies on tracking the board state and previous moves, adding complexity.
+•	FEN Encoding: Correctly representing "en passant target square" in FEN and updating it after moves.
+•	Interdependencies: Pawn rules must integrate smoothly with check, promotion, and capturing logic.
+•	Edge Cases: Handling scenarios like "En passant" at the board edge or pawn promotion.
+•	Debugging Tools: Visualizing and debugging pawn states and board interactions in Pharo can be challenging.
+
 
 ## Kata 2
 Restrict legal moves
@@ -44,6 +51,10 @@ Questions and ideas that can help you in the process:
 •	How do you avoid repeating all the existing code computing legal moves and checks?
 
 ##Difficulties encountered with Restrict Legal Moves
+•	Simulating Moves Safely: Testing potential moves without permanently altering the game state requires a reliable mechanism to temporarily modify and then restore the board state. This is crucial to check if a move leaves the king in danger.
+•	King Safety Validation: Determining whether a move leaves the king in check involves accurately tracking the king’s position and verifying if it remains under attack after the move. This requires precise evaluation of threats from all opponent pieces.
+•	Handling Special Rules: Rules like castling, en passant, and pawn promotion introduce additional complexities. For example, castling is only valid if the king is not in, passing through, or moving into check, which demands extra checks.
+•	Opponent Threat Calculation: Identifying squares attacked by opponent pieces is fundamental. This involves simulating their potential moves and ensuring that their attacks are correctly calculated for every board configuration.
 
 
 # Kata 3
